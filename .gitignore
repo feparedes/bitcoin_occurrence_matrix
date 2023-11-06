@@ -3,3 +3,6 @@ plugins/
 log/
 __pycache__/
 *.json
+target/
+dbt_packages/
+logs/
