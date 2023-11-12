@@ -67,12 +67,16 @@ def extract_data_from_database(query, csv_file):
     print(f"Se ha exportado la consulta a '{csv_file}' en formato CSV.")
 
 def generate_m_matrix(q_matrix, p_matrix, h_matrix, k=1):
-    n = 250000
+    n = 1000000
     diagonal_principal = [1] * n
     m_matrix = diags([diagonal_principal], [0], shape=(n, n), format="csr")
 
+
     for i in range(0,k-1):
-        m_matrix = q_matrix.get_matrix().dot(p_matrix.get_matrix()) 
+        if i == 0:
+            m_matrix = q_matrix.get_matrix().dot(p_matrix.get_matrix())
+        else: 
+            m_matrix = m_matrix.dot(p_matrix.get_matrix())
 
     m_matrix = h_matrix.get_matrix().dot(m_matrix)
     m_matrix = m_matrix.dot(q_matrix.get_matrix()) 
@@ -86,6 +90,7 @@ start = DummyOperator(task_id='start', dag=dag)
 @task(task_id="load_data_into_database")
 def load_data_into_database(path, table):
     df = pd.read_csv(path)
+    df = df[["block_timestamp", "hash", "inputs", "outputs"]]
     print(df.head())
 
     print(f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DBNAME}")
@@ -109,7 +114,7 @@ def load_data_into_database(path, table):
 
 run_dbt_model = BashOperator(
     task_id="run_dbt_model",
-    bash_command="cd /project/dbt && ls && dbt debug && dbt compile && dbt run -m +bitcoin_transactions_output && dbt run -m +bitcoin_transactions_input_set",
+    bash_command="cd /project/dbt && ls && dbt debug && dbt compile --vars '{initial_date: 201001, end_date: 202312}' && dbt run -m +bitcoin_transactions_output --vars '{initial_date: 201001, end_date: 202312}' && dbt run -m +bitcoin_transactions_input_set --vars '{initial_date: 201001, end_date: 202312}'",
 )
 
 @task(task_id="extract_all_data_from_database")
@@ -140,6 +145,6 @@ display_occurrence_matrix = BashOperator(
 end = DummyOperator(task_id='end', dag=dag)
 
 
-start >> load_data_into_database(path='/raw_data/bitcoin_transactions_202309071325.csv', table='bitcoin_raw_data') >> run_dbt_model >> extract_all_data_from_database() >> generate_occurrence_matrix(k=1) >> display_occurrence_matrix >> end
+start >> load_data_into_database(path='/raw_data/transactions20231106.csv', table='bitcoin_raw_data') >> run_dbt_model >> extract_all_data_from_database() >> generate_occurrence_matrix(k=1) >> display_occurrence_matrix >> end
 
 # start >> run_dbt_model >> extract_all_data_from_database() >> generate_occurrence_matrix(k=1) >> display_occurrence_matrix >> end

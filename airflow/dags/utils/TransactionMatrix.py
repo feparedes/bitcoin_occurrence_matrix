@@ -6,7 +6,7 @@ from scipy.sparse import lil_matrix
 
 class TransactionMatrix:
     
-    def __init__(self, path, order=250000, is_h_matrix=False):
+    def __init__(self, path, order=1000000, is_h_matrix=False):
             
             num_filas = order
             num_columnas = order
