@@ -49,7 +49,7 @@ addresses_dict as (
 
     select
         address,
-        row_number() over (partition by 1) as equivalent
+        row_number() over (partition by 1 order by address) as equivalent
     from
         addresses
 

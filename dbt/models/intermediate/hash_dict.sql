@@ -13,6 +13,7 @@ hashes as (
         hash
     from 
         {{ ref("stg_bitcoin_transactions") }}
+    order by 1
 
 ),
 
@@ -20,7 +21,7 @@ hashes_dict as (
 
     select
         hash,
-        row_number() over (partition by 1) as equivalent
+        row_number() over (partition by 1 order by hash) as equivalent
     from
         hashes
 
